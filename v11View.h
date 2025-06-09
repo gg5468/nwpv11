@@ -11,8 +11,8 @@ public:
 	Cv11Doc* GetDocument() const;
 	CRect rc;
 
-	int shape;
-	int shape_old;
+	int shape = 0;
+	int shape_old = 0;
 
 	COLORREF color;
 	COLORREF color_old;
