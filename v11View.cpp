@@ -25,6 +25,10 @@ BEGIN_MESSAGE_MAP(Cv11View, CView)
 	ON_COMMAND(ID_FILE_PRINT_PREVIEW, &Cv11View::OnFilePrintPreview)
 	ON_WM_CONTEXTMENU()
 	ON_WM_RBUTTONUP()
+	ON_WM_LBUTTONDOWN()
+	ON_COMMAND(ID_SHAPE, &Cv11View::OnShape)
+	ON_COMMAND(ID_COLOR, &Cv11View::OnColor)
+	ON_REGISTERED_MESSAGE(AFX_WM_ON_HIGHLIGHT_RIBBON_LIST_ITEM, &Cv11View::OnHighlightRibbonListItem)
 END_MESSAGE_MAP()
 
 // Cv11View construction/destruction
@@ -47,6 +51,20 @@ BOOL Cv11View::PreCreateWindow(CREATESTRUCT& cs)
 
 void Cv11View::OnDraw(CDC* pDC)
 {
+	CPen pen;
+	pen.CreatePen(PS_SOLID, 10, color);
+	pDC->SelectObject(pen);
+	switch (shape)
+	{
+	case 0:
+		pDC->Rectangle(rc);
+		break;
+	case 1:
+		pDC->Ellipse(rc);
+		break;
+	case 2:
+		pDC->RoundRect(rc, { 30,30 });
+	}
 }
 
 
@@ -113,3 +131,67 @@ Cv11Doc* Cv11View::GetDocument() const // non-debug version is inline
 
 // Cv11View message handlers
 
+
+void Cv11View::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	CRectTracker rct;
+	if (rct.TrackRubberBand(this, point))
+		rc = rct.m_rect;
+	Invalidate();
+}
+
+void Cv11View::OnColor()
+{
+	CArray<CMFCRibbonBaseElement*, CMFCRibbonBaseElement*> arr;
+	((CMainFrame*)AfxGetMainWnd())->m_wndRibbonBar.GetElementsByID(ID_COLOR, arr);
+	CMFCRibbonColorButton* pColor = (CMFCRibbonColorButton*)arr.GetAt(0);
+	color = color_old = pColor->GetColor();
+	Invalidate();
+}
+
+
+void Cv11View::OnShape()
+{
+
+	CArray<CMFCRibbonBaseElement*, CMFCRibbonBaseElement*> arr;
+	((CMainFrame*)AfxGetMainWnd())->m_wndRibbonBar.GetElementsByID(ID_SHAPE, arr);
+	CMFCRibbonGallery* pGallery = (CMFCRibbonGallery*)arr.GetAt(0);
+	shape = shape_old = pGallery->GetSelectedItem();
+	Invalidate();
+}
+
+LRESULT Cv11View::OnHighlightRibbonListItem(WPARAM wp, LPARAM lp)
+{
+	const int index = static_cast<int>(wp);
+
+	auto pRibbonElement = reinterpret_cast<CMFCRibbonBaseElement*>(lp);
+	if (!pRibbonElement)
+	{
+		return 0;
+	}
+
+	const UINT elementId = pRibbonElement->GetID();
+
+	if (elementId == ID_COLOR)
+	{
+		if (index == -1)
+		{
+			color = color_old;
+		}
+		else
+		{
+			auto* pColorButton = static_cast<CMFCRibbonColorButton*>(pRibbonElement);
+			if (pColorButton != nullptr)
+			{
+				color = pColorButton->GetHighlightedColor();
+			}
+		}
+	}
+	else if (elementId == ID_SHAPE)
+	{
+		shape = (index == -1) ? shape_old : index;
+	}
+
+	Invalidate();
+	return 0;
+}
