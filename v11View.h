@@ -14,8 +14,8 @@ public:
 	int shape = NULL;
 	int shape_old = NULL;
 
-	COLORREF color;
-	COLORREF color_old;
+	COLORREF color = RGB(0,0,0);
+	COLORREF color_old = RGB(0,0,0);
 // Operations
 public:
 
